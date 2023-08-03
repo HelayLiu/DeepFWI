@@ -15,4 +15,3 @@ This repository contains the dataset and the source code of FineWAVE.
 3. Run the test: `python test.py`
 
 
-### PS: This repository now only contains the test dataset, we will release the training dataset after the paper is accepted because we spent a lot of time collecting the dataset.
