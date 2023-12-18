@@ -17,13 +17,13 @@ if __name__ == '__main__':
     model = models.FinWAVE()
     optimizer = optim.Adam(model.parameters(), lr=5e-5)
     scheduler = ReduceLROnPlateau(optimizer,'min',verbose=True,factor=0.1)
+    criterion = nn.BCEWithLogitsLoss()
     if not configs.debug:
         model.cuda()
         model = torch.nn.DataParallel(model.cuda(), device_ids=configs.gpus, output_device=configs.gpus[0])
     model.to(configs.device)                                       
     logging.info('start train')
-    train.train(model=model, train_iterator=train_iterator, vaild_iterator=vaild_iterator, optimizer=optimizer,scheduler=scheduler, num_epochs=35, eval_every=1000,save_every=50000, 
-                file_path=configs.save_path, best_valid_loss=float('Inf'))
+    train.train(model=model, train_iterator=train_iterator, vaild_iterator=vaild_iterator, optimizer=optimizer,criterion=criterion,scheduler=scheduler, num_epochs=35, eval_every=1000,save_every=50000, file_path=configs.save_path, best_valid_loss=float('Inf'))
     logging.info('start evaluate')
     train.evaluate(model=model, test_iterator=test_iterator,reload_from_checkpoint=True,
-                load_path_checkpoint=os.path.join(configs.save_path,'model_f1111.pt'),optimizer=optimizer)
+                load_path_checkpoint=os.path.join(configs.save_path,'model_f1.pt'),optimizer=optimizer)

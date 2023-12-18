@@ -79,6 +79,8 @@ def train(model, train_iterator, vaild_iterator, optimizer,scheduler,num_epochs,
             msg = batch.Msg[0].to(device)  # The msgs tensor
             msg_len = batch.Msg[1].to(device)  # The msg lengths tensor
             label = batch.Label.to(device)  # The labels tensor
+            ir_code = batch.IRCode[0].to(device)  # The codes tensor
+            ir_code_len = batch.IRCode[1].to(device)  # The code lengths tensor
             cat=batch.Cat.to(device)
             rule=batch.Rule.to(device)
             cat=batch.Cat.to(device)
@@ -88,7 +90,7 @@ def train(model, train_iterator, vaild_iterator, optimizer,scheduler,num_epochs,
             fields_warning=batch.FieldWarning.to(device)
             field_code=batch.Field[0].to(device)
             field_code_len=batch.Field[1].to(device)
-            predict = model(msg,code,msg_len,code_len,field_code,field_code_len,cat,rule,rank,priority,fields_warning).squeeze(1)
+            predict = model(msg,code,msg_len,code_len,ir_code,ir_code_len,field_code,field_code_len,cat,rule,rank,priority,fields_warning).squeeze(1)
             BCE_loss = F.binary_cross_entropy_with_logits(predict, label, reduction='none')
             pt = torch.exp(-BCE_loss)
             alpha = torch.tensor([0.1, 0.9]).to(device)
@@ -121,8 +123,9 @@ def train(model, train_iterator, vaild_iterator, optimizer,scheduler,num_epochs,
                 fields_warning=batch.FieldWarning.to(device)
                 field_code=batch.Field[0].to(device)
                 field_code_len=batch.Field[1].to(device)
-
-                predict = model(msg,code,msg_len,code_len,field_code,field_code_len,cat,rule,rank,priority,fields_warning).squeeze(1)
+                ir_code = batch.IRCode[0].to(device)  # The codes tensor
+                ir_code_len = batch.IRCode[1].to(device)  # The code lengths tensor
+                predict = model(msg,code,msg_len,code_len,ir_code,ir_code_len,field_code,field_code_len,cat,rule,rank,priority,fields_warning).squeeze(1)
                 BCE_loss = F.binary_cross_entropy_with_logits(predict, label, reduction='none')
                 pt = torch.exp(-BCE_loss)
                 alpha = torch.tensor([0.1, 0.9]).to(device)
@@ -185,7 +188,9 @@ def evaluate(model,test_iterator, reload_from_checkpoint=False, load_path_checkp
             fields_warning=batch.FieldWarning.to(device)
             field_code=batch.Field[0].to(device)
             field_code_len=batch.Field[1].to(device)
-            predict = model(msg,code,msg_len,code_len,field_code,field_code_len,cat,rule,rank,priority,fields_warning).squeeze(1)
+            ir_code = batch.IRCode[0].to(device)  # The codes tensor
+            ir_code_len = batch.IRCode[1].to(device)  # The code lengths tensor
+            predict = model(msg,code,msg_len,code_len,ir_code,ir_code_len,field_code,field_code_len,cat,rule,rank,priority,fields_warning).squeeze(1)
             y_pred.extend(torch.round(torch.sigmoid(predict)).cpu())
             y_true.extend(label.cpu())
     precision, recall, f1, support = precision_recall_fscore_support(y_true, y_pred, labels=[1,0],zero_division=0)

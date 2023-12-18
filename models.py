@@ -12,6 +12,7 @@ class FinWAVE(nn.Module):
         self.code_hidden_size = 512
         self.code_embedding = nn.Embedding(100002, 512)
         self.desc_embedding = nn.Embedding(100002, 512)
+        self.ir_embedding = nn.Embedding(100002, 512)
         self.field_warning_embedding = nn.Embedding(26798, 32)
         self.field_warning_fc = nn.Linear(32,128)
         self.field_embedding = nn.Embedding(100002, 512)
@@ -26,26 +27,31 @@ class FinWAVE(nn.Module):
         self.dropout = nn.Dropout(0.25)
         self.att_code =GlobalAttention(1024)
         self.att_desc=GlobalAttention(1024)
+        self.ir_LSTM = nn.LSTM(input_size=512,
+                                hidden_size=512,
+                                num_layers=1,
+                                batch_first=True,
+                                bidirectional=True,
+                                dropout=0)
         self.code_LSTM = nn.LSTM(input_size=512,
                                 hidden_size=512,
                                 num_layers=1,
                                 batch_first=True,
                                 bidirectional=True,
-                                dropout=0.)
+                                dropout=0)
         self.field_LSTM = nn.LSTM(input_size=512,
                                 hidden_size=512,
                                 num_layers=1,
                                 batch_first=True,
                                 bidirectional=True,
-                                dropout=0.)
+                                dropout=0)
         self.desc_LSTM = nn.LSTM(input_size=512,
                                 hidden_size=512,
                                 num_layers=1,
                                 batch_first=True,
                                 bidirectional=True,
-                                dropout=0.)
-
-        self.fc1 = nn.Linear(3712, 1)
+                                dropout=0)
+        self.fc1 = nn.Linear(4736, 1)
         self.init_weights()
     def init_weights(self):
         for m in self.modules():
@@ -57,10 +63,11 @@ class FinWAVE(nn.Module):
                 nn.init.xavier_uniform_(m.weight)
                 if m.bias is not None:
                     nn.init.zeros_(m.bias)
-    def forward(self, desc, code,desc_length,code_length,field_code,field_code_length,cat,rule,rank,priority,field):
+    def forward(self, desc, code,desc_length,code_length,ir_code,ir_code_length,field_code,field_code_length,cat,rule,rank,priority,field):
         self.code_LSTM.flatten_parameters()
         self.desc_LSTM.flatten_parameters()
         self.field_LSTM.flatten_parameters()
+        self.ir_LSTM.flatten_parameters()
         desc_embedding=self.desc_embedding(desc)
         h_0 = torch.zeros(self.desc_n_layers*2, desc.size(0), self.desc_hidden_size,device=desc.device)
         c_0 = torch.zeros(self.desc_n_layers*2, desc.size(0), self.desc_hidden_size,device=desc.device)
@@ -92,6 +99,24 @@ class FinWAVE(nn.Module):
             hids_code = hids_code.index_select(0, inv_indices)
             h_n = h_n.index_select(1, inv_indices)
         hids_code_max,_ = torch.max(hids_code, dim=1)
+        
+        #ir
+        
+        ir_embedding = self.ir_embedding(ir_code)
+        h_0 = torch.zeros(self.code_n_layers*2, ir_code.size(0), self.code_hidden_size,device=ir_code.device)
+        c_0 = torch.zeros(self.code_n_layers*2, ir_code.size(0), self.code_hidden_size,device=ir_code.device)
+        if ir_code_length is not None:
+            ir_lens_sorted, indices = ir_code_length.sort(descending=True)
+            ir_sorted = ir_embedding.index_select(0, indices)   
+            ir = pack_padded_sequence(ir_sorted, ir_lens_sorted.data.tolist(), batch_first=True)
+        hids_ir, (h_n, c_n) = self.ir_LSTM(ir, (h_0, c_0))
+        if ir_code_length is not None:
+            _, inv_indices = indices.sort()
+            hids_ir, _ = pad_packed_sequence(hids_ir, batch_first=True)
+            hids_ir = F.dropout(hids_ir, p=0.25, training=self.training)
+            hids_ir = hids_ir.index_select(0, inv_indices)
+            h_n = h_n.index_select(1, inv_indices)
+        hids_ir_max,_ = torch.max(hids_ir, dim=1)
         
         field_code_embedding = self.field_embedding(field_code)
         h_0 = torch.zeros(self.code_n_layers*2, field_code.size(0), self.code_hidden_size,device=field_code.device)
@@ -126,7 +151,7 @@ class FinWAVE(nn.Module):
         field_warning=self.field_warning_embedding(field)
         field_warning=field_warning.view(field_warning.size(0),-1)
         field_warning=self.field_warning_fc(field_warning)
-        all=torch.cat((code_out,desc_out,hids_field_max,field_warning,cat,rule,priority,rank),dim=1)
+        all=torch.cat((code_out,desc_out,hids_field_max,hids_ir_max,field_warning,cat,rule,priority,rank),dim=1)
         all=self.dropout(all)
         output = self.fc1(all)
         return output

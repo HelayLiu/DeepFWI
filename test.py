@@ -12,9 +12,7 @@ if __name__ == '__main__':
     logging.info('start contruct data iterator')
     train_iterator, vaild_iterator, test_iterator = prepare_data_feature.prepare_data()
     logging.info('start contruct model')
-    model = models.LSTMwithLSTM11(desc_dim=100002, desc_embedding_dim=512, desc_hidden_dim=512, desc_n_layers=1, 
-                 code_dim=100002, code_embedding_dim=512, code_hidden_dim=512, code_n_layers=1,
-                 dropout=0., hidden_dim=512, output_dim=1)
+    model = models.FinWAVE()
     optimizer = optim.Adam(model.parameters(), lr=5e-5)
     if not configs.debug:
         model.cuda()
