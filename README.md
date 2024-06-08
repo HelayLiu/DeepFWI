@@ -1,5 +1,5 @@
-# FineWAVE
-## FineWAVE: Fine-Grained Warning Verification of Bugs for Automated Static Analysis Tools
+# DeepFWI
+## DeepFWI: Fine-Grained Static Analysis Warning Identification Using Deep Learning
 
 This repository contains the dataset and the source code of FineWAVE.
 
