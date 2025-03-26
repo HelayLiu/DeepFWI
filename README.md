@@ -1,7 +1,7 @@
 # DeepFWI
 ## DeepFWI: Fine-Grained Static Analysis Warning Identification Using Deep Learning
 
-This repository contains the dataset and the source code of FineWAVE.
+This repository contains the dataset and the source code of DeepFWI.
 
 ### To run the tool, please follow the instructions:
 1. Install the dependencies: `pip install -r requirements.txt`
