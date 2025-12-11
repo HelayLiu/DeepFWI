@@ -1,5 +1,5 @@
 # DeepFWI
-## DeepFWI: Fine-Grained Static Analysis Warning Identification Using Deep Learning
+## DeepFWI: Identifying Bug-Sensitive Warnings with Multi-Modal Code-Warning Semantics
 
 This repository contains the dataset and the source code of DeepFWI.
 
